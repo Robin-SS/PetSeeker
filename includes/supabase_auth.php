@@ -1,9 +1,7 @@
 <?php
-// Ensure environment variables are loaded
 require_once dirname(__DIR__) . '/config/env.php';
 require_once __DIR__ . '/supabase_storage.php';
 
-// Define constants if not already declared by storage or another loader
 if (!defined('SUPABASE_URL')) {
     define('SUPABASE_URL', rtrim(getenv('SUPABASE_URL') ?: '', '/'));
 }
