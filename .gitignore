@@ -1,0 +1,14 @@
+# Ignore local environment secrets
+.env
+.env.local
+
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db
+
+# Ignore code editor settings
+.vscode/
+.idea/
+
+# Ignore temporary upload directories if any exist locally
+uploads/
