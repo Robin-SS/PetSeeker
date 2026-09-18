@@ -33,9 +33,9 @@
               <div class="col-md-5">
                 <div class="d-flex align-items-center gap-3">
                   <?php if ($lost_img): ?>
-                    <img src="<?= htmlspecialchars($lost_img) ?>" class="rounded object-fit-cover flex-shrink-0" width="70" height="70" alt="Lost Pet">
+                    <img src="<?= htmlspecialchars($lost_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-thumb-box" alt="Lost Pet">
                   <?php else: ?>
-                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 70px; height: 70px;">
+                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-thumb-box">
                       <i class="bi bi-camera fs-3"></i>
                     </div>
                   <?php endif; ?>
@@ -59,9 +59,9 @@
               <div class="col-md-5">
                 <div class="d-flex align-items-center gap-3">
                   <?php if ($found_img): ?>
-                    <img src="<?= htmlspecialchars($found_img) ?>" class="rounded object-fit-cover flex-shrink-0" width="70" height="70" alt="Found Pet">
+                    <img src="<?= htmlspecialchars($found_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-thumb-box" alt="Found Pet">
                   <?php else: ?>
-                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 70px; height: 70px;">
+                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-thumb-box">
                       <i class="bi bi-camera fs-3"></i>
                     </div>
                   <?php endif; ?>
@@ -82,7 +82,7 @@
                   <i class="bi bi-info-circle me-1"></i> Proposed by <strong><?= htmlspecialchars($m['proposer_name'] ?? 'Community Member') ?></strong>. Confirm if this is the pet.
                 </div>
                 <div class="d-flex gap-2">
-                  <form action="<?= auth_url('my_reports.php?tab=matches') ?>" method="POST" class="d-inline">
+                  <form action="<?= auth_url('my_reports.php?tab=matches') ?>" method="POST" class="d-inline" data-confirm="Confirm and accept this match proposal? This will resolve both listings.">
                     <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                     <input type="hidden" name="action" value="accept_match">
                     <input type="hidden" name="match_id" value="<?= $m['match_id'] ?>">
@@ -91,7 +91,7 @@
                     </button>
                   </form>
 
-                  <form action="<?= auth_url('my_reports.php?tab=matches') ?>" method="POST" class="d-inline" onsubmit="return confirm('Decline this match proposal?');">
+                  <form action="<?= auth_url('my_reports.php?tab=matches') ?>" method="POST" class="d-inline" data-confirm="Decline this match proposal?">
                     <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                     <input type="hidden" name="action" value="decline_match">
                     <input type="hidden" name="match_id" value="<?= $m['match_id'] ?>">

@@ -11,8 +11,6 @@ $species     = $_GET['species'] ?? '';
 $location_id = (int)($_GET['location_id'] ?? 0);
 $keyword     = trim($_GET['keyword'] ?? '');
 
-// Base queries using UNION ALL to aggregate lost and found reports
-// Enforcing status = 'Approved' filters out 'Resolved', 'Pending', and 'Rejected' posts
 $lost_sql = "
     SELECT 
         'Lost' AS report_type,
@@ -99,7 +97,7 @@ $reports = $stmt->fetchAll();
 <!-- Search and Filter Bar -->
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body p-4">
-    <form action="index.php" method="GET" class="row g-3">
+    <form action="<?= auth_url('index.php') ?>" method="GET" class="row g-3">
       <?php if (!empty($auth_sid)): ?>
         <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid) ?>">
       <?php endif; ?>
@@ -139,7 +137,7 @@ $reports = $stmt->fetchAll();
 
       <div class="col-md-3">
         <label class="form-label small fw-bold">Search</label>
-        <input type="text" name="keyword" class="form-control" placeholder="Breed, color, name..." value="<?= htmlspecialchars($keyword) ?>">
+        <input type="text" name="keyword" id="petSearchInput" class="form-control" placeholder="Breed, color, name..." value="<?= htmlspecialchars($keyword) ?>">
       </div>
 
       <div class="col-12 d-flex justify-content-end gap-2 mt-3">
@@ -161,13 +159,13 @@ $reports = $stmt->fetchAll();
   <?php else: ?>
     <?php foreach ($reports as $item): ?>
       <?php $img_src = get_pet_photo_url($item['photo'] ?? null); ?>
-      <div class="col">
-        <div class="card h-100 shadow-sm border-0 position-relative">
+      <div class="col pet-card-item">
+        <div class="card h-100 shadow-sm border-0 position-relative pet-card">
           
           <!-- Image -->
           <div class="ratio ratio-4x3 bg-secondary bg-opacity-25 rounded-top">
             <?php if ($img_src): ?>
-              <img src="<?= htmlspecialchars($img_src) ?>" class="card-img-top object-fit-cover" alt="Pet Image">
+              <img src="<?= htmlspecialchars($img_src) ?>" class="card-img-top object-fit-cover pet-card-img" alt="Pet Image">
             <?php else: ?>
               <div class="d-flex align-items-center justify-content-center text-muted">
                 <i class="bi bi-camera fs-1"></i>

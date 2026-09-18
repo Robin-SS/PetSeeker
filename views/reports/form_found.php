@@ -34,7 +34,7 @@
 
     <div class="card border-0 shadow-sm">
       <div class="card-body p-4">
-        <form action="<?= auth_url('report_found.php') ?>" method="POST" enctype="multipart/form-data">
+        <form action="<?= auth_url('report_found.php') ?>" method="POST" enctype="multipart/form-data" data-validate novalidate>
           <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
 
           <!-- Pet Basic Info -->
@@ -64,8 +64,11 @@
 
             <div class="col-md-6">
               <label class="form-label fw-semibold">Pet Photo <span class="text-muted small fw-normal">(Recommended)</span></label>
-              <input type="file" name="photo" class="form-control" accept="image/jpeg,image/png,image/webp">
+              <input type="file" name="photo" id="petPhotoInput" class="form-control" accept="image/jpeg,image/png,image/webp">
               <div class="form-text small">Accepted formats: JPG, PNG, WEBP (Max 5MB).</div>
+              <div class="mt-2 text-center preview-wrapper d-none" id="previewContainer">
+                <img id="petPhotoPreview" src="#" alt="Pet Preview" class="img-thumbnail custom-preview-img">
+              </div>
             </div>
           </div>
 

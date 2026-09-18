@@ -27,9 +27,9 @@
               <td>
                 <div class="d-flex align-items-center">
                   <?php if ($img_src): ?>
-                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover" width="50" height="50" alt="Pet Thumbnail">
+                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover table-thumb-box" alt="Pet Thumbnail">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted" style="width: 50px; height: 50px;">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted table-thumb-box">
                       <i class="bi bi-camera"></i>
                     </div>
                   <?php endif; ?>
@@ -65,7 +65,7 @@
                   <i class="bi bi-eye"></i>
                 </a>
 
-                <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this active report? This will remove the listing and pet record.');">
+                <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST" class="d-inline" data-confirm="Permanently delete this active report? This will remove the listing and pet record.">
                   <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                   <input type="hidden" name="action" value="takedown_post">
                   <input type="hidden" name="report_type" value="<?= $item['report_type'] ?>">

@@ -171,9 +171,9 @@ $source_img = get_pet_photo_url($source_report['photo'] ?? null);
         <div class="row align-items-center">
           <div class="col-auto">
             <?php if ($source_img): ?>
-              <img src="<?= htmlspecialchars($source_img) ?>" class="rounded object-fit-cover" width="75" height="75" alt="Source Pet">
+              <img src="<?= htmlspecialchars($source_img) ?>" class="rounded object-fit-cover match-source-thumb" alt="Source Pet">
             <?php else: ?>
-              <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted" style="width: 75px; height: 75px;">
+              <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted match-source-thumb">
                 <i class="bi bi-camera fs-3"></i>
               </div>
             <?php endif; ?>
@@ -212,9 +212,9 @@ $source_img = get_pet_photo_url($source_report['photo'] ?? null);
               <div class="card-body">
                 <div class="d-flex align-items-start gap-3">
                   <?php if ($cand_img): ?>
-                    <img src="<?= htmlspecialchars($cand_img) ?>" class="rounded object-fit-cover flex-shrink-0" width="80" height="80" alt="Candidate Pet">
+                    <img src="<?= htmlspecialchars($cand_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-candidate-thumb" alt="Candidate Pet">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 80px; height: 80px;">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-candidate-thumb">
                       <i class="bi bi-camera fs-4"></i>
                     </div>
                   <?php endif; ?>
@@ -231,7 +231,7 @@ $source_img = get_pet_photo_url($source_report['photo'] ?? null);
                     <div class="small text-muted mb-1">Color: <?= htmlspecialchars($cand['color']) ?></div>
                     <div class="small text-muted mb-3"><i class="bi bi-geo-alt text-danger"></i> <?= htmlspecialchars($cand['location_name']) ?></div>
 
-                    <form action="<?= auth_url('match_submit.php?' . ($source_type === 'lost' ? 'lost_id=' . $lost_id : 'found_id=' . $found_id)) ?>" method="POST">
+                    <form action="<?= auth_url('match_submit.php?' . ($source_type === 'lost' ? 'lost_id=' . $lost_id : 'found_id=' . $found_id)) ?>" method="POST" data-confirm="Propose this match? A notification will be sent to the other party.">
                       <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                       <input type="hidden" name="action" value="submit_match">
                       <input type="hidden" name="lost_id" value="<?= $source_type === 'lost' ? $lost_id : $cand['lost_id'] ?>">

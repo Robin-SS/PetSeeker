@@ -110,7 +110,7 @@ $img_src = get_pet_photo_url($report['photo'] ?? null);
       <div class="row g-0">
         <div class="col-md-5 bg-light d-flex align-items-center justify-content-center border-end">
           <?php if ($img_src): ?>
-            <img src="<?= htmlspecialchars($img_src) ?>" class="img-fluid rounded-start w-100 h-100 object-fit-cover" style="max-height: 450px;" alt="Pet Image">
+            <img src="<?= htmlspecialchars($img_src) ?>" class="img-fluid rounded-start w-100 h-100 object-fit-cover report-detail-img" alt="Pet Image">
           <?php else: ?>
             <div class="p-5 text-muted text-center">
               <i class="bi bi-camera fs-1"></i>
@@ -157,7 +157,7 @@ $img_src = get_pet_photo_url($report['photo'] ?? null);
               </a>
             <?php else: ?>
               <div class="alert alert-secondary text-center mb-0">
-                <a href="<?= BASE_URL ?>login.php">Log in</a> to propose a match for this report.
+                <a href="<?= auth_url('login.php') ?>">Log in</a> to propose a match for this report.
               </div>
             <?php endif; ?>
 

@@ -15,7 +15,7 @@
         </span>
       </div>
       <div class="card-body">
-        <form action="<?= auth_url('admin_dashboard.php?tab=management') ?>" method="POST" class="row g-2 mb-3">
+        <form action="<?= auth_url('admin_dashboard.php?tab=management') ?>" method="POST" class="row g-2 mb-3" data-validate novalidate>
           <input type="hidden" name="action" value="add_category">
 
           <div class="col-sm-5">
@@ -29,7 +29,7 @@
           </div>
         </form>
 
-        <div style="max-height: 480px; overflow-y: auto;">
+        <div class="admin-scroll-list">
           <ul class="list-group list-group-flush border-top">
             <?php if (empty($categories)): ?>
               <li class="list-group-item text-center text-muted py-3">No categories registered.</li>
@@ -60,7 +60,7 @@
         </span>
       </div>
       <div class="card-body">
-        <form action="<?= auth_url('admin_dashboard.php?tab=management') ?>" method="POST" class="row g-2 mb-3">
+        <form action="<?= auth_url('admin_dashboard.php?tab=management') ?>" method="POST" class="row g-2 mb-3" data-validate novalidate>
           <input type="hidden" name="action" value="add_location">
 
           <div class="col-sm-9">
@@ -71,7 +71,7 @@
           </div>
         </form>
 
-        <div style="max-height: 480px; overflow-y: auto;">
+        <div class="admin-scroll-list">
           <ul class="list-group list-group-flush border-top">
             <?php if (empty($locations)): ?>
               <li class="list-group-item text-center text-muted py-3">No locations registered.</li>

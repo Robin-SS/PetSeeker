@@ -32,9 +32,9 @@
               <div class="col-md-5">
                 <div class="d-flex align-items-center gap-3">
                   <?php if ($lost_img): ?>
-                    <img src="<?= htmlspecialchars($lost_img) ?>" class="rounded object-fit-cover flex-shrink-0" width="70" height="70" alt="Lost Pet">
+                    <img src="<?= htmlspecialchars($lost_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-thumb-box" alt="Lost Pet">
                   <?php else: ?>
-                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 70px; height: 70px;">
+                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-thumb-box">
                       <i class="bi bi-camera fs-3"></i>
                     </div>
                   <?php endif; ?>
@@ -57,9 +57,9 @@
               <div class="col-md-5">
                 <div class="d-flex align-items-center gap-3">
                   <?php if ($found_img): ?>
-                    <img src="<?= htmlspecialchars($found_img) ?>" class="rounded object-fit-cover flex-shrink-0" width="70" height="70" alt="Found Pet">
+                    <img src="<?= htmlspecialchars($found_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-thumb-box" alt="Found Pet">
                   <?php else: ?>
-                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 70px; height: 70px;">
+                    <div class="bg-white rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-thumb-box">
                       <i class="bi bi-camera fs-3"></i>
                     </div>
                   <?php endif; ?>

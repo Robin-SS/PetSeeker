@@ -25,9 +25,9 @@
               <td>
                 <div class="d-flex align-items-center">
                   <?php if ($img_src): ?>
-                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover" width="50" height="50" alt="Pet Thumbnail">
+                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover table-thumb-box" alt="Pet Thumbnail">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted" style="width: 50px; height: 50px;">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted table-thumb-box">
                       <i class="bi bi-camera"></i>
                     </div>
                   <?php endif; ?>
@@ -55,7 +55,7 @@
                   <i class="bi bi-eye"></i>
                 </a>
 
-                <form action="<?= auth_url('my_reports.php?tab=lost') ?>" method="POST" class="d-inline" onsubmit="return confirm('Mark this pet as resolved? It will move to your history.');">
+                <form action="<?= auth_url('my_reports.php?tab=lost') ?>" method="POST" class="d-inline" data-confirm="Mark this pet as resolved? It will move to your history.">
                   <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                   <input type="hidden" name="action" value="resolve_report">
                   <input type="hidden" name="report_type" value="lost">
@@ -65,7 +65,7 @@
                   </button>
                 </form>
 
-                <form action="<?= auth_url('my_reports.php?tab=lost') ?>" method="POST" class="d-inline" onsubmit="return confirm('Permanently remove this report?');">
+                <form action="<?= auth_url('my_reports.php?tab=lost') ?>" method="POST" class="d-inline" data-confirm="Permanently remove this report?">
                   <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
                   <input type="hidden" name="action" value="delete_report">
                   <input type="hidden" name="report_type" value="lost">

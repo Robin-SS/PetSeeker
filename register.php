@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($res['success']) {
             // Supabase sends confirmation email automatically via custom SMTP
-            $success = 'Account created successfully! A confirmation email has been dispatched to <strong>' . htmlspecialchars($email) . '</strong>. You can now <a href="' . BASE_URL . 'login.php" class="alert-link">login here</a>.';
+            $success = 'Account created successfully! A confirmation email has been dispatched to <strong>' . htmlspecialchars($email) . '</strong>. You can now <a href="' . auth_url('login.php') . '" class="alert-link">login here</a>.';
             // Clear input fields on success
             $_POST = [];
         } else {
@@ -71,7 +71,7 @@ require_once __DIR__ . '/includes/header.php';
           <div class="alert alert-success py-2 small"><?= $success ?></div>
         <?php endif; ?>
 
-        <form action="<?= auth_url('register.php') ?>" method="POST" novalidate>
+        <form action="<?= auth_url('register.php') ?>" method="POST" data-validate novalidate>
           <div class="mb-3">
             <label for="name" class="form-label fw-semibold">Full Name *</label>
             <input type="text" name="name" id="name" class="form-control" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">

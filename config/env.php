@@ -1,9 +1,4 @@
 <?php
-// config/env.php
-
-/**
- * Loads key-value pairs from a .env file into PHP environment variables.
- */
 function load_env(string $path): void {
     if (!file_exists($path)) {
         return;

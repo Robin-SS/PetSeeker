@@ -34,11 +34,11 @@ foreach ($users as $u) {
         <div class="input-group input-group-sm">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
           <input type="text" id="normalUserSearch" class="form-control bg-light border-start-0" placeholder="Search by name, email, phone, or ID...">
-          <button class="btn btn-outline-secondary" type="button" onclick="clearUserSearch('normalUserSearch', 'normalUserTable')">Clear</button>
+          <button class="btn btn-outline-secondary" type="button" data-clear-target="normalUserSearch">Clear</button>
         </div>
       </div>
 
-      <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+      <div class="table-responsive admin-user-table-wrapper">
         <table class="table align-middle mb-0" id="normalUserTable">
           <thead class="table-light sticky-top">
             <tr>
@@ -68,7 +68,7 @@ foreach ($users as $u) {
                     <div class="small text-muted"><?= htmlspecialchars(date('M d, Y', strtotime($u['created_at']))) ?></div>
                   </td>
                   <td class="text-end pe-3">
-                    <form action="<?= auth_url('admin_dashboard.php?tab=users') ?>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this user? This cannot be undone.');">
+                    <form action="<?= auth_url('admin_dashboard.php?tab=users') ?>" method="POST" class="d-inline" data-confirm="Are you sure you want to permanently delete this user? This cannot be undone.">
                       <input type="hidden" name="action" value="delete_user">
                       <input type="hidden" name="target_user_id" value="<?= (int)$u['user_id'] ?>">
 
@@ -105,11 +105,11 @@ foreach ($users as $u) {
         <div class="input-group input-group-sm">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
           <input type="text" id="privilegedUserSearch" class="form-control bg-light border-start-0" placeholder="Search staff or admin...">
-          <button class="btn btn-outline-secondary" type="button" onclick="clearUserSearch('privilegedUserSearch', 'privilegedUserTable')">Clear</button>
+          <button class="btn btn-outline-secondary" type="button" data-clear-target="privilegedUserSearch">Clear</button>
         </div>
       </div>
 
-      <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+      <div class="table-responsive admin-user-table-wrapper">
         <table class="table align-middle mb-0" id="privilegedUserTable">
           <thead class="table-light sticky-top">
             <tr>
@@ -141,7 +141,7 @@ foreach ($users as $u) {
                   </td>
                   <td class="text-end pe-3">
                     <?php if ((int)$u['user_id'] !== (int)$auth_user['user_id']): ?>
-                      <form action="<?= auth_url('admin_dashboard.php?tab=users') ?>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this staff/admin account? This cannot be undone.');">
+                      <form action="<?= auth_url('admin_dashboard.php?tab=users') ?>" method="POST" class="d-inline" data-confirm="Are you sure you want to permanently delete this staff/admin account? This cannot be undone.">
                         <input type="hidden" name="action" value="delete_user">
                         <input type="hidden" name="target_user_id" value="<?= (int)$u['user_id'] ?>">
 
@@ -165,50 +165,3 @@ foreach ($users as $u) {
     </div>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  function attachTableFilter(inputId, tableId, noMatchId) {
-    const input = document.getElementById(inputId);
-    const table = document.getElementById(tableId);
-    const noMatchRow = document.getElementById(noMatchId);
-    if (!input || !table) return;
-
-    input.addEventListener('input', function () {
-      const filter = this.value.trim().toLowerCase();
-      const rows = table.querySelectorAll('tbody tr.user-row');
-      let visibleCount = 0;
-
-      rows.forEach(function (row) {
-        const text = row.textContent.toLowerCase();
-        if (text.includes(filter)) {
-          row.classList.remove('d-none');
-          visibleCount++;
-        } else {
-          row.classList.add('d-none');
-        }
-      });
-
-      if (noMatchRow) {
-        if (visibleCount === 0 && rows.length > 0) {
-          noMatchRow.classList.remove('d-none');
-        } else {
-          noMatchRow.classList.add('d-none');
-        }
-      }
-    });
-  }
-
-  attachTableFilter('normalUserSearch', 'normalUserTable', 'normalNoMatchesRow');
-  attachTableFilter('privilegedUserSearch', 'privilegedUserTable', 'privilegedNoMatchesRow');
-});
-
-function clearUserSearch(inputId, tableId) {
-  const input = document.getElementById(inputId);
-  if (input) {
-    input.value = '';
-    input.dispatchEvent(new Event('input'));
-    input.focus();
-  }
-}
-</script>

@@ -83,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Prevent session fixation by rotating session ID on privilege change
             session_regenerate_id(true);
 
+            // Re-sync global $auth_sid to the newly generated session ID
+            $auth_sid = session_id();
+
             $_SESSION['auth_user'] = [
                 'user_id'   => $user['user_id'],
                 'user_name' => $user['name'] ?: $user['username'],
@@ -91,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'role'      => $user['role_name']
             ];
 
-            // Clean redirects without sid URL exposure
+            // Target routing based on privilege
             if ($user['role_name'] === 'Administrator') {
                 $target = 'admin_dashboard.php';
             } elseif ($user['role_name'] === 'Staff') {
@@ -100,7 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $target = 'index.php';
             }
 
-            header('Location: ' . BASE_URL . $target);
+            // Redirect using auth_url() to bind this specific tab to the new session ID
+            header('Location: ' . auth_url($target));
             exit;
         }
     }
@@ -124,7 +128,9 @@ require_once __DIR__ . '/includes/header.php';
           <div class="alert alert-danger py-2 small"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <form action="login.php" method="POST">
+        <form action="<?= auth_url('login.php') ?>" method="POST" data-validate novalidate>
+          <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
+
           <div class="mb-3">
             <label class="form-label fw-semibold">Email or Username</label>
             <input type="text" name="identifier" class="form-control" required autofocus placeholder="user@email.com or staff01" value="<?= htmlspecialchars($_POST['identifier'] ?? '') ?>">
@@ -137,7 +143,7 @@ require_once __DIR__ . '/includes/header.php';
         </form>
 
         <div class="text-center mt-3 small">
-          Don't have an account? <a href="register.php">Sign up as a User</a>
+          Don't have an account? <a href="<?= auth_url('register.php') ?>">Sign up as a User</a>
         </div>
       </div>
     </div>
