@@ -22,20 +22,26 @@
           </tr>
         <?php else: ?>
           <?php foreach ($active_reports as $item): ?>
-            <?php $img_src = get_pet_photo_url($item['photo'] ?? null); ?>
+            <?php $img_src = function_exists('get_pet_photo_url') ? get_pet_photo_url($item['photo'] ?? null) : ($item['photo'] ?? null); ?>
             <tr>
               <td>
                 <div class="d-flex align-items-center">
-                  <?php if ($img_src): ?>
-                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover table-thumb-box" alt="Pet Thumbnail">
+                  <?php if (!empty($img_src)): ?>
+                    <img src="<?= htmlspecialchars($img_src) ?>" 
+                         class="rounded me-2 border flex-shrink-0" 
+                         alt="Pet Thumbnail"
+                         style="width: 48px !important; height: 48px !important; min-width: 48px !important; max-width: 48px !important; min-height: 48px !important; max-height: 48px !important; object-fit: cover !important; display: block;">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted table-thumb-box">
+                    <div class="bg-light rounded border d-flex align-items-center justify-content-center me-2 text-muted flex-shrink-0"
+                         style="width: 48px !important; height: 48px !important; min-width: 48px !important; font-size: 1.1rem;">
                       <i class="bi bi-camera"></i>
                     </div>
                   <?php endif; ?>
                   <div>
-                    <strong><?= $item['pet_name'] ? htmlspecialchars($item['pet_name']) : 'Unnamed' ?></strong>
-                    <div class="small text-muted">ID: #<?= $item['report_id'] ?></div>
+                    <strong class="d-block text-truncate" style="max-width: 140px;">
+                      <?= !empty($item['pet_name']) ? htmlspecialchars($item['pet_name']) : 'Unnamed' ?>
+                    </strong>
+                    <div class="small text-muted">ID: #<?= (int)$item['report_id'] ?></div>
                   </div>
                 </div>
               </td>
@@ -65,12 +71,11 @@
                   <i class="bi bi-eye"></i>
                 </a>
 
-                <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST" class="d-inline" data-confirm="Permanently delete this active report? This will remove the listing and pet record.">
-                  <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
+                <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this active report? This will remove the listing and pet record.');">
                   <input type="hidden" name="action" value="takedown_post">
-                  <input type="hidden" name="report_type" value="<?= $item['report_type'] ?>">
-                  <input type="hidden" name="report_id" value="<?= $item['report_id'] ?>">
-                  <input type="hidden" name="pet_id" value="<?= $item['pet_id'] ?>">
+                  <input type="hidden" name="report_type" value="<?= htmlspecialchars($item['report_type']) ?>">
+                  <input type="hidden" name="report_id" value="<?= (int)$item['report_id'] ?>">
+                  <input type="hidden" name="pet_id" value="<?= (int)$item['pet_id'] ?>">
                   <button type="submit" class="btn btn-sm btn-outline-danger" title="Takedown Report">
                     <i class="bi bi-trash3-fill"></i> Takedown
                   </button>

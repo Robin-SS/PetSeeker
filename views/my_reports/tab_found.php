@@ -20,20 +20,26 @@
           </tr>
         <?php else: ?>
           <?php foreach ($my_found_reports as $row): ?>
-            <?php $img_src = get_pet_photo_url($row['photo'] ?? null); ?>
+            <?php $img_src = function_exists('get_pet_photo_url') ? get_pet_photo_url($row['photo'] ?? null) : ($row['photo'] ?? null); ?>
             <tr>
               <td>
                 <div class="d-flex align-items-center">
-                  <?php if ($img_src): ?>
-                    <img src="<?= htmlspecialchars($img_src) ?>" class="rounded me-2 object-fit-cover table-thumb-box" alt="Pet Thumbnail">
+                  <?php if (!empty($img_src)): ?>
+                    <img src="<?= htmlspecialchars($img_src) ?>" 
+                         class="rounded me-2 border flex-shrink-0" 
+                         alt="Pet Thumbnail"
+                         style="width: 48px !important; height: 48px !important; min-width: 48px !important; max-width: 48px !important; min-height: 48px !important; max-height: 48px !important; object-fit: cover !important; display: block;">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted table-thumb-box">
+                    <div class="bg-light rounded border d-flex align-items-center justify-content-center me-2 text-muted flex-shrink-0"
+                         style="width: 48px !important; height: 48px !important; min-width: 48px !important; font-size: 1.1rem;">
                       <i class="bi bi-camera"></i>
                     </div>
                   <?php endif; ?>
                   <div>
-                    <strong><?= $row['pet_name'] ? htmlspecialchars($row['pet_name']) : 'Unnamed / Stray' ?></strong>
-                    <div class="small text-muted">ID: #<?= $row['found_id'] ?></div>
+                    <strong class="d-block text-truncate" style="max-width: 140px;">
+                      <?= !empty($row['pet_name']) ? htmlspecialchars($row['pet_name']) : 'Unnamed / Stray' ?>
+                    </strong>
+                    <div class="small text-muted">ID: #<?= (int)$row['found_id'] ?></div>
                   </div>
                 </div>
               </td>
@@ -55,22 +61,20 @@
                   <i class="bi bi-eye"></i>
                 </a>
 
-                <form action="<?= auth_url('my_reports.php?tab=found') ?>" method="POST" class="d-inline" data-confirm="Mark this pet report as resolved? It will move to your history.">
-                  <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
+                <form action="<?= auth_url('my_reports.php?tab=found') ?>" method="POST" class="d-inline" onsubmit="return confirm('Mark this pet report as resolved? It will move to your history.');">
                   <input type="hidden" name="action" value="resolve_report">
                   <input type="hidden" name="report_type" value="found">
-                  <input type="hidden" name="report_id" value="<?= $row['found_id'] ?>">
+                  <input type="hidden" name="report_id" value="<?= (int)$row['found_id'] ?>">
                   <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Mark as Resolved">
                     <i class="bi bi-check2-circle"></i> Resolve
                   </button>
                 </form>
 
-                <form action="<?= auth_url('my_reports.php?tab=found') ?>" method="POST" class="d-inline" data-confirm="Permanently remove this report?">
-                  <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
+                <form action="<?= auth_url('my_reports.php?tab=found') ?>" method="POST" class="d-inline" onsubmit="return confirm('Permanently remove this report?');">
                   <input type="hidden" name="action" value="delete_report">
                   <input type="hidden" name="report_type" value="found">
-                  <input type="hidden" name="report_id" value="<?= $row['found_id'] ?>">
-                  <input type="hidden" name="pet_id" value="<?= $row['pet_id'] ?>">
+                  <input type="hidden" name="report_id" value="<?= (int)$row['found_id'] ?>">
+                  <input type="hidden" name="pet_id" value="<?= (int)$row['pet_id'] ?>">
                   <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Report">
                     <i class="bi bi-trash3"></i>
                   </button>

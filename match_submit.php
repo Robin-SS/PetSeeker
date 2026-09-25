@@ -1,13 +1,15 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/supabase_storage.php';
 
-// Users must be authenticated to propose a match
-require_login();
+// Authentication Guard: executed before headers/HTML
+if (empty($auth_user)) {
+    header('Location: ' . auth_url('login.php'));
+    exit;
+}
 
 /** @var array $auth_user */
 /** @var PDO $pdo */
-/** @var string $auth_sid */
 
 // Accept IDs from either GET or POST so form submission reloads keep state
 $lost_id  = (int)($_GET['lost_id'] ?? $_POST['lost_id'] ?? 0);
@@ -17,7 +19,7 @@ $error   = '';
 $success = '';
 
 // ==========================================
-// 1. POST SUBMISSION HANDLER
+// 1. POST SUBMISSION HANDLER (Executed before header.php)
 // ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_match') {
     $p_lost_id  = (int)($_POST['lost_id'] ?? 0);
@@ -101,7 +103,7 @@ if ($source_is_lost && $lost_id > 0) {
 
     if ($source_report) {
         $cand_stmt = $pdo->prepare('
-            SELECT f.found_id, f.date_found, p.photo, p.color, c.species, c.breed, loc.location_name
+            SELECT f.found_id, f.date_found, p.name AS pet_name, p.photo, p.color, c.species, c.breed, loc.location_name
             FROM found_pet f
             JOIN pet p ON f.pet_id = p.pet_id
             JOIN category c ON p.category_id = c.category_id
@@ -140,13 +142,16 @@ if ($source_is_lost && $lost_id > 0) {
     }
 }
 
+// Render HTML layout
+require_once __DIR__ . '/includes/header.php';
+
 if (!$source_report) {
     echo '<div class="alert alert-danger">Valid source report not found. <a href="' . auth_url('index.php') . '">Back to Feed</a></div>';
     require_once __DIR__ . '/includes/footer.php';
     exit;
 }
 
-$source_img = get_pet_photo_url($source_report['photo'] ?? null);
+$source_img = function_exists('get_pet_photo_url') ? get_pet_photo_url($source_report['photo'] ?? null) : ($source_report['photo'] ?? null);
 ?>
 
 <div class="row justify-content-center">
@@ -170,19 +175,23 @@ $source_img = get_pet_photo_url($source_report['photo'] ?? null);
       <div class="card-body p-3">
         <div class="row align-items-center">
           <div class="col-auto">
-            <?php if ($source_img): ?>
-              <img src="<?= htmlspecialchars($source_img) ?>" class="rounded object-fit-cover match-source-thumb" alt="Source Pet">
+            <?php if (!empty($source_img)): ?>
+              <img src="<?= htmlspecialchars($source_img) ?>" 
+                   class="rounded border flex-shrink-0" 
+                   alt="Source Pet"
+                   style="width: 72px !important; height: 72px !important; min-width: 72px !important; max-width: 72px !important; min-height: 72px !important; max-height: 72px !important; object-fit: cover !important; display: block;">
             <?php else: ?>
-              <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted match-source-thumb">
-                <i class="bi bi-camera fs-3"></i>
+              <div class="bg-light rounded border d-flex align-items-center justify-content-center text-muted flex-shrink-0"
+                   style="width: 72px !important; height: 72px !important; min-width: 72px !important; font-size: 1.5rem;">
+                <i class="bi bi-camera"></i>
               </div>
             <?php endif; ?>
           </div>
           <div class="col">
             <span class="badge <?= $source_type === 'lost' ? 'bg-danger' : 'bg-success' ?> mb-1">
-              Source <?= ucfirst($source_type) ?> Report #<?= $source_type === 'lost' ? $lost_id : $found_id ?>
+              Source <?= ucfirst($source_type) ?> Report #<?= $source_type === 'lost' ? (int)$lost_id : (int)$found_id ?>
             </span>
-            <h5 class="fw-bold mb-1"><?= $source_report['pet_name'] ? htmlspecialchars($source_report['pet_name']) : 'Unnamed' ?></h5>
+            <h5 class="fw-bold mb-1"><?= !empty($source_report['pet_name']) ? htmlspecialchars($source_report['pet_name']) : 'Unnamed' ?></h5>
             <div class="text-muted small">
               <?= htmlspecialchars($source_report['species'] . ' (' . $source_report['breed'] . ')') ?> &bull; 
               <?= htmlspecialchars($source_report['color']) ?> &bull; 
@@ -206,36 +215,41 @@ $source_img = get_pet_photo_url($source_report['photo'] ?? null);
     <?php else: ?>
       <div class="row g-3">
         <?php foreach ($candidates as $cand): ?>
-          <?php $cand_img = get_pet_photo_url($cand['photo'] ?? null); ?>
+          <?php $cand_img = function_exists('get_pet_photo_url') ? get_pet_photo_url($cand['photo'] ?? null) : ($cand['photo'] ?? null); ?>
           <div class="col-md-6">
             <div class="card h-100 border-0 shadow-sm">
               <div class="card-body">
                 <div class="d-flex align-items-start gap-3">
-                  <?php if ($cand_img): ?>
-                    <img src="<?= htmlspecialchars($cand_img) ?>" class="rounded object-fit-cover flex-shrink-0 match-candidate-thumb" alt="Candidate Pet">
+                  <?php if (!empty($cand_img)): ?>
+                    <img src="<?= htmlspecialchars($cand_img) ?>" 
+                         class="rounded border flex-shrink-0" 
+                         alt="Candidate Pet"
+                         style="width: 72px !important; height: 72px !important; min-width: 72px !important; max-width: 72px !important; min-height: 72px !important; max-height: 72px !important; object-fit: cover !important; display: block;">
                   <?php else: ?>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0 match-candidate-thumb">
-                      <i class="bi bi-camera fs-4"></i>
+                    <div class="bg-light rounded border d-flex align-items-center justify-content-center text-muted flex-shrink-0"
+                         style="width: 72px !important; height: 72px !important; min-width: 72px !important; font-size: 1.5rem;">
+                      <i class="bi bi-camera"></i>
                     </div>
                   <?php endif; ?>
 
-                  <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start">
-                      <h6 class="fw-bold mb-1">
-                        <?= !empty($cand['pet_name']) ? htmlspecialchars($cand['pet_name']) : 'ID #' . ($source_type === 'lost' ? $cand['found_id'] : $cand['lost_id']) ?>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex justify-content-between align-items-start gap-1">
+                      <h6 class="fw-bold mb-1 text-truncate" style="max-width: 140px;">
+                        <?= !empty($cand['pet_name']) ? htmlspecialchars($cand['pet_name']) : 'ID #' . ($source_type === 'lost' ? (int)$cand['found_id'] : (int)$cand['lost_id']) ?>
                       </h6>
                       <span class="badge bg-light text-dark border">
                         <?= htmlspecialchars($cand['breed']) ?>
                       </span>
                     </div>
                     <div class="small text-muted mb-1">Color: <?= htmlspecialchars($cand['color']) ?></div>
-                    <div class="small text-muted mb-3"><i class="bi bi-geo-alt text-danger"></i> <?= htmlspecialchars($cand['location_name']) ?></div>
+                    <div class="small text-muted mb-3 text-truncate">
+                      <i class="bi bi-geo-alt text-danger"></i> <?= htmlspecialchars($cand['location_name']) ?>
+                    </div>
 
-                    <form action="<?= auth_url('match_submit.php?' . ($source_type === 'lost' ? 'lost_id=' . $lost_id : 'found_id=' . $found_id)) ?>" method="POST" data-confirm="Propose this match? A notification will be sent to the other party.">
-                      <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
+                    <form action="<?= auth_url('match_submit.php?' . ($source_type === 'lost' ? 'lost_id=' . $lost_id : 'found_id=' . $found_id)) ?>" method="POST" onsubmit="return confirm('Propose this match? A notification will be sent to the other party.');">
                       <input type="hidden" name="action" value="submit_match">
-                      <input type="hidden" name="lost_id" value="<?= $source_type === 'lost' ? $lost_id : $cand['lost_id'] ?>">
-                      <input type="hidden" name="found_id" value="<?= $source_type === 'lost' ? $cand['found_id'] : $found_id ?>">
+                      <input type="hidden" name="lost_id" value="<?= $source_type === 'lost' ? (int)$lost_id : (int)$cand['lost_id'] ?>">
+                      <input type="hidden" name="found_id" value="<?= $source_type === 'lost' ? (int)$cand['found_id'] : (int)$found_id ?>">
                       
                       <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold">
                         <i class="bi bi-link-45deg"></i> Propose as Match

@@ -16,6 +16,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'registered_check_email') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identifier = trim($_POST['identifier'] ?? '');
     $password   = $_POST['password'] ?? '';
+    $tab_id     = trim($_POST['tab_id'] ?? $_GET['tab_id'] ?? '');
 
     if (empty($identifier) || empty($password)) {
         $error = 'Please enter your email/username and password.';
@@ -78,20 +79,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Establish secure session
+        // Establish tab-isolated session
         if ($auth_success && $user) {
-            // Prevent session fixation by rotating session ID on privilege change
-            session_regenerate_id(true);
+            if (empty($tab_id)) {
+                $tab_id = 'tab_' . bin2hex(random_bytes(8));
+            }
 
-            // Re-sync global $auth_sid to the newly generated session ID
-            $auth_sid = session_id();
+            if (!isset($_SESSION['tabs'])) {
+                $_SESSION['tabs'] = [];
+            }
 
-            $_SESSION['auth_user'] = [
-                'user_id'   => $user['user_id'],
-                'user_name' => $user['name'] ?: $user['username'],
-                'email'     => $user['email'],
-                'role_id'   => $user['role_id'],
-                'role'      => $user['role_name']
+            // Save under this tab's dedicated sub-session
+            $_SESSION['tabs'][$tab_id] = [
+                'auth_user' => [
+                    'user_id'   => $user['user_id'],
+                    'user_name' => $user['name'] ?: $user['username'],
+                    'email'     => $user['email'],
+                    'role_id'   => $user['role_id'],
+                    'role'      => $user['role_name']
+                ]
             ];
 
             // Target routing based on privilege
@@ -103,8 +109,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $target = 'index.php';
             }
 
-            // Redirect using auth_url() to bind this specific tab to the new session ID
-            header('Location: ' . auth_url($target));
+            $dest = defined('BASE_URL') ? BASE_URL . $target : '/PetSeeker/' . $target;
+            $dest .= (str_contains($dest, '?') ? '&' : '?') . 'tab_id=' . urlencode($tab_id);
+
+            header('Location: ' . $dest);
             exit;
         }
     }
@@ -129,8 +137,6 @@ require_once __DIR__ . '/includes/header.php';
         <?php endif; ?>
 
         <form action="<?= auth_url('login.php') ?>" method="POST" data-validate novalidate>
-          <input type="hidden" name="sid" value="<?= htmlspecialchars($auth_sid ?? '') ?>">
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Email or Username</label>
             <input type="text" name="identifier" class="form-control" required autofocus placeholder="user@email.com or staff01" value="<?= htmlspecialchars($_POST['identifier'] ?? '') ?>">

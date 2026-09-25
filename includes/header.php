@@ -6,7 +6,8 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', '/PetSeeker/');
 }
 
-$auth_user = $_SESSION['auth_user'] ?? null;
+// Current file helper to highlight active link
+$current_page = basename($_SERVER['PHP_SELF']);
 
 // Helpers
 if (!function_exists('redirect')) {
@@ -39,9 +40,6 @@ function require_role($allowed_roles = []): void {
     }
 }
 
-// Current file helper to highlight active link
-$current_page = basename($_SERVER['PHP_SELF']);
-
 // Notifications
 $unread_count = 0;
 if (!empty($auth_user['user_id'])) {
@@ -60,6 +58,51 @@ if (!empty($auth_user['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PETSeeker - Lost & Found Pets</title>
+
+    <!-- Tab-Isolated Session Bridge -->
+    <script>
+      (function() {
+        // 1. Maintain isolated per-tab identity in sessionStorage
+        let tabId = sessionStorage.getItem('petseeker_tab_id');
+        if (!tabId) {
+          tabId = 'tab_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+          sessionStorage.setItem('petseeker_tab_id', tabId);
+        }
+
+        // 2. Attach tab_id parameter if missing from current URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('tab_id')) {
+          urlParams.set('tab_id', tabId);
+          window.location.replace(window.location.pathname + '?' + urlParams.toString() + window.location.hash);
+          return;
+        }
+
+        // 3. Keep tab_id traveling with link clicks and form submits inside this tab
+        document.addEventListener('DOMContentLoaded', () => {
+          document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('http')) {
+              try {
+                const u = new URL(a.href, window.location.origin);
+                u.searchParams.set('tab_id', tabId);
+                a.href = u.pathname + u.search + u.hash;
+              } catch(e) {}
+            }
+          });
+
+          document.querySelectorAll('form').forEach(form => {
+            if (!form.querySelector('input[name="tab_id"]')) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'tab_id';
+              input.value = tabId;
+              form.appendChild(input);
+            }
+          });
+        });
+      })();
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>assets/css/style.css" rel="stylesheet">

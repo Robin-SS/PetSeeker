@@ -2,7 +2,7 @@
 
 :root {
   --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --bg-surface: #f8fafc;
+  --bg-surface: #ffffff;
   --card-bg: #ffffff;
   --brand-primary: #4f46e5;
   --brand-primary-hover: #4338ca;
@@ -208,6 +208,33 @@ body {
   background-color: rgba(79, 70, 229, 0.02);
 }
 
+/* --- Table Pet Thumbnail Fixes --- */
+.table-thumb-box {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  object-fit: cover !important;
+  border-radius: 8px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.table td img,
+.table tbody img {
+  width: 48px !important;
+  height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  object-fit: cover !important;
+  border-radius: 8px !important;
+  flex-shrink: 0 !important;
+}
+
 /* Image preview container */
 #previewContainer {
   background-color: #f1f5f9;
@@ -356,7 +383,6 @@ body {
     left: 0;
     margin-left: 0 !important;
     transform: translateX(-100%);
-    /* Set z-index ABOVE the backdrop (1050 > 1040) */
     z-index: 1050 !important;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
   }

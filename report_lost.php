@@ -1,9 +1,12 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/supabase_storage.php';
 
-// Authentication guard
-require_login();
+// Authentication guard before any HTML is rendered
+if (empty($auth_user)) {
+    header('Location: ' . auth_url('login.php'));
+    exit;
+}
 
 /** @var array $auth_user */
 /** @var PDO $pdo */
@@ -71,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pet_stmt->execute([$category_id, $name, $color, $photo_path]);
                 $pet_id = (int)$pet_stmt->fetchColumn();
 
-                // 2. Insert Lost Pet Listing (Status defaults to \'Approved\' for immediate visibility)
+                // 2. Insert Lost Pet Listing (Status defaults to 'Approved' for immediate visibility)
                 $lost_stmt = $pdo->prepare("
                     INSERT INTO lost_pet (pet_id, user_id, location_id, date_lost, additional_notes, status) 
                     VALUES (?, ?, ?, ?, ?, 'Approved')
@@ -80,14 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $pdo->commit();
 
-                // Clean redirect to personal reports
+                // Clean redirect executes safely before HTML headers are sent
                 header('Location: ' . auth_url('my_reports.php?tab=lost'));
                 exit;
             } catch (PDOException $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
-                
+
                 // Clean up the uploaded Supabase image if DB insertion failed
                 if ($photo_path) {
                     delete_pet_image($photo_path);
@@ -98,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Include header only when ready to render the HTML view
+require_once __DIR__ . '/includes/header.php';
 
 // Render View
 include __DIR__ . '/views/reports/form_lost.php';

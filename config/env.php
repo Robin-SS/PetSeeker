@@ -5,6 +5,10 @@ function load_env(string $path): void {
     }
 
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        return;
+    }
+
     foreach ($lines as $line) {
         $line = trim($line);
 
@@ -20,16 +24,18 @@ function load_env(string $path): void {
 
         [$name, $value] = explode('=', $line, 2);
         $name  = trim($name);
+        // Strip surrounding quotes and whitespace
         $value = trim($value, " \t\n\r\0\x0B\"'");
 
-        // Populate environment superglobals without overwriting existing system envs
-        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-            putenv("{$name}={$value}");
-            $_ENV[$name]    = $value;
-            $_SERVER[$name] = $value;
-        }
+        // Always register in all three scopes so getenv(), $_ENV, and $_SERVER can read it
+        putenv("{$name}={$value}");
+        $_ENV[$name]    = $value;
+        $_SERVER[$name] = $value;
     }
 }
 
 // Automatically load the .env located at the project root
-load_env(dirname(__DIR__) . '/.env');
+$root_env = dirname(__DIR__) . '/.env';
+if (file_exists($root_env)) {
+    load_env($root_env);
+}

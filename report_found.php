@@ -1,9 +1,12 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/supabase_storage.php';
 
-// Authentication guard
-require_login();
+// Authentication guard before any HTML is rendered
+if (empty($auth_user)) {
+    header('Location: ' . auth_url('login.php'));
+    exit;
+}
 
 /** @var array $auth_user */
 /** @var PDO $pdo */
@@ -80,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $pdo->commit();
 
-                // Clean redirect to personal found reports
+                // Clean redirect executes safely before HTML headers are sent
                 header('Location: ' . auth_url('my_reports.php?tab=found'));
                 exit;
             } catch (PDOException $e) {
@@ -98,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Include header now that all headers/redirects are handled
+require_once __DIR__ . '/includes/header.php';
 
 // Render View
 include __DIR__ . '/views/reports/form_found.php';
