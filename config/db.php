@@ -2,10 +2,6 @@
 // Load environment helper
 require_once __DIR__ . '/env.php';
 
-if (!defined('BASE_URL')) {
-    define('BASE_URL', '/PetSeeker/');
-}
-
 // -----------------------------------------------------------------------------
 // Explicit Absolute Environment Loading
 // -----------------------------------------------------------------------------
@@ -19,6 +15,44 @@ if (file_exists($env_path)) {
 }
 
 // -----------------------------------------------------------------------------
+//  Environment Variable Lookup Helper
+// -----------------------------------------------------------------------------
+$getEnvVar = function (string $key, ?string $default = null): ?string {
+    $val = getenv($key);
+    if ($val !== false && $val !== '') {
+        return $val;
+    }
+    if (!empty($_ENV[$key])) {
+        return $_ENV[$key];
+    }
+    if (!empty($_SERVER[$key])) {
+        return $_SERVER[$key];
+    }
+    return $default;
+};
+
+// -----------------------------------------------------------------------------
+// Dynamic Base URL Configuration
+// -----------------------------------------------------------------------------
+if (!defined('BASE_URL')) {
+    // Priority:
+    // 1. Explicit env var (e.g. on Render you can set BASE_URL = "/")
+    // 2. Local fallback detecting /PetSeeker/ or root /
+    $env_base = $getEnvVar('BASE_URL');
+    if (!empty($env_base)) {
+        define('BASE_URL', rtrim($env_base, '/') . '/');
+    } else {
+        // Auto-detect based on script path
+        $script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        if (str_contains($script_dir, 'PetSeeker')) {
+            define('BASE_URL', '/PetSeeker/');
+        } else {
+            define('BASE_URL', '/');
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Standard Cookie Session Bootstrap (Master Storage Container)
 // -----------------------------------------------------------------------------
 if (session_status() === PHP_SESSION_NONE) {
@@ -26,9 +60,15 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', '1');
     ini_set('session.use_trans_sid', '0');
 
+    // Secure cookie flag on HTTPS (Render provides HTTPS by default)
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
+        'domain'   => '',
+        'secure'   => $is_https,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
@@ -68,7 +108,7 @@ if (!function_exists('auth_url')) {
             return $url;
         }
 
-        $base = defined('BASE_URL') ? BASE_URL : '/PetSeeker/';
+        $base = defined('BASE_URL') ? BASE_URL : '/';
         if (!str_starts_with($url, '/') && !str_starts_with($url, $base)) {
             $url = $base . ltrim($url, '/');
         }
@@ -94,23 +134,6 @@ if (!function_exists('auth_url')) {
 }
 
 // -----------------------------------------------------------------------------
-// Resilient Environment Variable Lookup
-// -----------------------------------------------------------------------------
-$getEnvVar = function (string $key, ?string $default = null): ?string {
-    $val = getenv($key);
-    if ($val !== false && $val !== '') {
-        return $val;
-    }
-    if (!empty($_ENV[$key])) {
-        return $_ENV[$key];
-    }
-    if (!empty($_SERVER[$key])) {
-        return $_SERVER[$key];
-    }
-    return $default;
-};
-
-// -----------------------------------------------------------------------------
 // Database Connection (PDO -> Supabase PostgreSQL)
 // -----------------------------------------------------------------------------
 $host     = $getEnvVar('DB_HOST');
@@ -120,7 +143,7 @@ $username = $getEnvVar('DB_USER');
 $password = $getEnvVar('DB_PASS');
 
 if (empty($host)) {
-    die("Database configuration error: DB_HOST is missing or empty. Looking for .env at: " . htmlspecialchars($env_path));
+    die("Database configuration error: DB_HOST is missing or empty. Please set environment variables on Render or in .env.");
 }
 
 try {
@@ -140,13 +163,6 @@ try {
 if (!function_exists('create_notification')) {
     /**
      * Inserts a persistent notification for a specific user.
-     *
-     * @param PDO $pdo Active PDO database connection
-     * @param int $user_id Target recipient user_id
-     * @param string $title Short summary title (e.g. 'New Match Proposal')
-     * @param string $message Detailed body text
-     * @param string|null $link_url Destination URL or view route
-     * @return bool True if inserted successfully, false on error
      */
     function create_notification(PDO $pdo, int $user_id, string $title, string $message, ?string $link_url = null): bool {
         try {
