@@ -15,7 +15,7 @@ if (file_exists($env_path)) {
 }
 
 // -----------------------------------------------------------------------------
-//  Environment Variable Lookup Helper
+// Resilient Environment Variable Lookup Helper
 // -----------------------------------------------------------------------------
 $getEnvVar = function (string $key, ?string $default = null): ?string {
     $val = getenv($key);
@@ -35,17 +35,17 @@ $getEnvVar = function (string $key, ?string $default = null): ?string {
 // Dynamic Base URL Configuration
 // -----------------------------------------------------------------------------
 if (!defined('BASE_URL')) {
-    // Priority:
-    // 1. Explicit env var (e.g. on Render you can set BASE_URL = "/")
-    // 2. Local fallback detecting /PetSeeker/ or root /
-    $env_base = $getEnvVar('BASE_URL');
-    if (!empty($env_base)) {
-        define('BASE_URL', rtrim($env_base, '/') . '/');
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $is_local = str_starts_with($host, 'localhost') || str_starts_with($host, '127.0.0.1');
+
+    if ($is_local) {
+        // Enforce the XAMPP/local subfolder when testing on your machine
+        define('BASE_URL', '/PetSeeker/');
     } else {
-        // Auto-detect based on script path
-        $script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-        if (str_contains($script_dir, 'PetSeeker')) {
-            define('BASE_URL', '/PetSeeker/');
+        // On Render or production domain, use BASE_URL from env or default to root
+        $env_base = $getEnvVar('BASE_URL');
+        if (!empty($env_base)) {
+            define('BASE_URL', rtrim($env_base, '/') . '/');
         } else {
             define('BASE_URL', '/');
         }
