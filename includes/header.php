@@ -2,10 +2,6 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/supabase_storage.php';
 
-if (!defined('BASE_URL')) {
-    define('BASE_URL', '/PetSeeker/');
-}
-
 // Current file helper to highlight active link
 $current_page = basename($_SERVER['PHP_SELF']);
 
@@ -81,11 +77,13 @@ if (!empty($auth_user['user_id'])) {
         document.addEventListener('DOMContentLoaded', () => {
           document.querySelectorAll('a[href]').forEach(a => {
             const href = a.getAttribute('href');
-            if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('http')) {
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
               try {
                 const u = new URL(a.href, window.location.origin);
-                u.searchParams.set('tab_id', tabId);
-                a.href = u.pathname + u.search + u.hash;
+                if (u.origin === window.location.origin) {
+                  u.searchParams.set('tab_id', tabId);
+                  a.href = u.pathname + u.search + u.hash;
+                }
               } catch(e) {}
             }
           });
@@ -172,7 +170,7 @@ if (!empty($auth_user['user_id'])) {
                   data-bs-toggle="offcanvas" 
                   data-bs-target="#notificationDrawer" 
                   aria-controls="notificationDrawer" 
-                  id="notifBellBtn"
+                  id="notifBellBtn" 
                   title="Notifications">
             <i class="bi bi-bell-fill fs-5"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger <?= $unread_count > 0 ? '' : 'd-none' ?>" 

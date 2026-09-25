@@ -1,20 +1,13 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!defined('BASE_URL')) {
-    define('BASE_URL', '/PetSeeker/');
-}
-
-// Redirect logged-in users before rendering headers
-if (!empty($_SESSION['auth_user'])) {
-    header('Location: ' . BASE_URL . 'index.php');
-    exit;
-}
-
+// 1. Load config and DB first so BASE_URL and tab sessions are properly initialized
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/supabase_auth.php';
+
+// Redirect logged-in users before rendering headers
+if (!empty($auth_user)) {
+    header('Location: ' . auth_url('index.php'));
+    exit;
+}
 
 $error   = '';
 $success = '';
@@ -42,13 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'phone_number' => $phone_number
         ]);
 
-        if ($res['success']) {
-            // Supabase sends confirmation email automatically via custom SMTP
+        if (!empty($res['success'])) {
             $success = 'Account created successfully! A confirmation email has been dispatched to <strong>' . htmlspecialchars($email) . '</strong>. You can now <a href="' . auth_url('login.php') . '" class="alert-link">login here</a>.';
-            // Clear input fields on success
             $_POST = [];
         } else {
-            $error = $res['error'];
+            $error = $res['error'] ?? 'Registration failed. Please try again.';
         }
     }
 }
