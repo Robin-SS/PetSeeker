@@ -23,46 +23,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $report_type = $_POST['report_type'] ?? '';
         $report_id   = (int)($_POST['report_id'] ?? 0);
         $pet_id      = (int)($_POST['pet_id'] ?? 0);
+        $reason      = trim($_POST['reason'] ?? '');
 
-        if (in_array($report_type, ['lost', 'found'], true) && $report_id > 0) {
+        if (empty($reason)) {
+            $error = 'A reason is required to take down a community report.';
+        } elseif (in_array($report_type, ['lost', 'found'], true) && $report_id > 0) {
             try {
                 $table = ($report_type === 'lost') ? 'lost_pet' : 'found_pet';
                 $pk    = ($report_type === 'lost') ? 'lost_id' : 'found_id';
 
-                // Guard: Verify report is not already resolved/reunited
-                $chk_stmt = $pdo->prepare("SELECT status::text AS status FROM {$table} WHERE {$pk} = ?");
+                // 1. Guard: Check current status, fetch author, and retrieve pet details before deletion
+                $chk_stmt = $pdo->prepare("
+                    SELECT r.user_id, r.status::text AS status, p.name AS pet_name, p.photo
+                    FROM {$table} r
+                    LEFT JOIN pet p ON r.pet_id = p.pet_id
+                    WHERE r.{$pk} = ?
+                ");
                 $chk_stmt->execute([$report_id]);
-                $curr = $chk_stmt->fetch();
+                $curr = $chk_stmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($curr && $curr['status'] === 'Resolved') {
-                    $error = 'This report has already been resolved and is preserved in user reunion history. It cannot be deleted.';
+                if (!$curr) {
+                    $error = 'The requested report could not be found.';
+                } elseif ($curr['status'] === 'Resolved') {
+                    $error = 'This report has already been resolved and is preserved in reunion history. It cannot be deleted.';
                 } else {
-                    // Fetch photo URL before removing records
-                    $photo_to_delete = null;
-                    if ($pet_id > 0) {
-                        $p_stmt = $pdo->prepare('SELECT photo FROM pet WHERE pet_id = ?');
-                        $p_stmt->execute([$pet_id]);
-                        $photo_to_delete = $p_stmt->fetchColumn();
-                    }
+                    $author_id       = (int)($curr['user_id'] ?? 0);
+                    $pet_name        = !empty($curr['pet_name']) ? $curr['pet_name'] : ucfirst($report_type) . " Report #{$report_id}";
+                    $photo_to_delete = $curr['photo'] ?? null;
 
                     $pdo->beginTransaction();
 
+                    // 2. Clear any dependent matches linked to this report to satisfy foreign keys
+                    if ($report_type === 'lost') {
+                        $del_match = $pdo->prepare('DELETE FROM "match" WHERE lost_id = ?');
+                    } else {
+                        $del_match = $pdo->prepare('DELETE FROM "match" WHERE found_id = ?');
+                    }
+                    $del_match->execute([$report_id]);
+
+                    // 3. Delete report record
                     $del_stmt = $pdo->prepare("DELETE FROM {$table} WHERE {$pk} = ?");
                     $del_stmt->execute([$report_id]);
 
+                    // 4. Delete pet record if present
                     if ($pet_id > 0) {
                         $del_pet = $pdo->prepare('DELETE FROM pet WHERE pet_id = ?');
                         $del_pet->execute([$pet_id]);
                     }
 
+                    // 5. Send notification with the staff's written explanation
+                    if ($author_id > 0 && function_exists('create_notification')) {
+                        $notif_title   = 'Post Removed by Staff';
+                        $notif_message = "Your {$report_type} pet listing for \"{$pet_name}\" was removed. Reason: {$reason}";
+                        $notif_link    = 'my_reports.php';
+
+                        create_notification($pdo, $author_id, $notif_title, $notif_message, $notif_link);
+                    }
+
                     $pdo->commit();
 
-                    // Remove remote image from Supabase Storage
-                    if (!empty($photo_to_delete) && str_starts_with($photo_to_delete, 'http')) {
+                    // 6. Remove remote image from Supabase Storage
+                    if (!empty($photo_to_delete) && function_exists('delete_pet_image') && str_starts_with($photo_to_delete, 'http')) {
                         delete_pet_image($photo_to_delete);
                     }
 
-                    $message = ucfirst($report_type) . " report #{$report_id} and its associated files were permanently deleted.";
+                    $message = ucfirst($report_type) . " report #{$report_id} was removed.";
                 }
             } catch (PDOException $e) {
                 if ($pdo->inTransaction()) {

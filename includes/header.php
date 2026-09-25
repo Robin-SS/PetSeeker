@@ -40,12 +40,12 @@ function require_role($allowed_roles = []): void {
     }
 }
 
-// Notifications
+// Notifications: Count unread notifications using the is_read column
 $unread_count = 0;
 if (!empty($auth_user['user_id'])) {
     try {
-        $notif_stmt = $pdo->prepare("SELECT COUNT(*) FROM notification WHERE user_id = ? AND status = 'unread'");
-        $notif_stmt->execute([$auth_user['user_id']]);
+        $notif_stmt = $pdo->prepare("SELECT COUNT(*) FROM notification WHERE user_id = ? AND is_read = FALSE");
+        $notif_stmt->execute([(int)$auth_user['user_id']]);
         $unread_count = (int)$notif_stmt->fetchColumn();
     } catch (PDOException $e) {
         $unread_count = 0;
@@ -166,14 +166,21 @@ if (!empty($auth_user['user_id'])) {
 
       <div class="d-flex align-items-center gap-3">
         <?php if ($auth_user): ?>
-          <a class="position-relative text-secondary fs-5" href="<?= auth_url('notifications.php') ?>" title="Notifications">
-            <i class="bi bi-bell-fill"></i>
-            <?php if ($unread_count > 0): ?>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
-                <?= $unread_count ?>
-              </span>
-            <?php endif; ?>
-          </a>
+          <!-- Offcanvas Notification Trigger Button -->
+          <button class="btn btn-link text-secondary position-relative p-1 border-0 shadow-none text-decoration-none" 
+                  type="button" 
+                  data-bs-toggle="offcanvas" 
+                  data-bs-target="#notificationDrawer" 
+                  aria-controls="notificationDrawer" 
+                  id="notifBellBtn"
+                  title="Notifications">
+            <i class="bi bi-bell-fill fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger <?= $unread_count > 0 ? '' : 'd-none' ?>" 
+                  id="notifBadge" 
+                  style="font-size: 0.65rem;">
+              <?= $unread_count > 99 ? '99+' : $unread_count ?>
+            </span>
+          </button>
 
           <div class="dropdown">
             <a class="d-flex align-items-center gap-2 text-decoration-none text-dark dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

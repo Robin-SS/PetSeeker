@@ -31,28 +31,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             try {
                 $pdo->beginTransaction();
 
+                // Retrieve match, report details, and proposer info
                 $verify_stmt = $pdo->prepare('
-                    SELECT m.match_id, m.lost_id, m.found_id, l.user_id AS lost_owner, f.user_id AS found_finder
+                    SELECT 
+                        m.match_id, 
+                        m.lost_id, 
+                        m.found_id, 
+                        m.proposed_by_user_id,
+                        l.user_id AS lost_owner, 
+                        f.user_id AS found_finder,
+                        lp.name AS lost_pet_name
                     FROM "match" m
                     JOIN lost_pet l ON m.lost_id = l.lost_id
+                    JOIN pet lp ON l.pet_id = lp.pet_id
                     JOIN found_pet f ON m.found_id = f.found_id
                     WHERE m.match_id = ? AND m.status = \'Pending\'
-                      AND (
-                          (l.user_id = ? AND m.proposed_by_user_id != ?) 
-                          OR 
-                          (f.user_id = ? AND m.proposed_by_user_id != ?)
-                      )
+                      AND (l.user_id = ? OR f.user_id = ?)
                 ');
-                $verify_stmt->execute([$match_id, $user_id, $user_id, $user_id, $user_id]);
-                $match = $verify_stmt->fetch();
+                $verify_stmt->execute([$match_id, $user_id, $user_id]);
+                $match = $verify_stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($match) {
+                    // 1. Update Match and Reports to Confirmed/Resolved
                     $pdo->prepare('UPDATE "match" SET status = \'Confirmed\', resolved_at = NOW() WHERE match_id = ?')
                         ->execute([$match_id]);
 
                     $pdo->prepare("UPDATE lost_pet SET status = 'Resolved' WHERE lost_id = ?")->execute([$match['lost_id']]);
                     $pdo->prepare("UPDATE found_pet SET status = 'Resolved' WHERE found_id = ?")->execute([$match['found_id']]);
 
+                    // 2. Dismiss competing pending matches for these reports
                     $dismiss = $pdo->prepare('
                         UPDATE "match" 
                         SET status = \'Dismissed\' 
@@ -62,6 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     ');
                     $dismiss->execute([$match_id, $match['lost_id'], $match['found_id']]);
 
+                    // 3. Dispatch Notification to Proposer
+                    $proposer_id = (int)($match['proposed_by_user_id'] ?? 0);
+                    $pet_name    = !empty($match['lost_pet_name']) ? $match['lost_pet_name'] : 'the pet';
+
+                    if ($proposer_id > 0 && function_exists('create_notification')) {
+                        create_notification(
+                            $pdo,
+                            $proposer_id,
+                            'Match Confirmed!',
+                            "Your proposed match for {$pet_name} was confirmed.",
+                            'my_reports.php?tab=history'
+                        );
+                    }
+
                     $pdo->commit();
                     $message = "Match confirmed! The listing has been cleared from active reports and archived in your History.";
                 } else {
@@ -69,7 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $error = "Match proposal not found or you lack authorization to confirm it.";
                 }
             } catch (PDOException $e) {
-                $pdo->rollBack();
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $error = "Failed to confirm match: " . $e->getMessage();
             }
         }
@@ -82,9 +105,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         if ($match_id > 0) {
             try {
-                $stmt = $pdo->prepare('UPDATE "match" SET status = \'Dismissed\' WHERE match_id = ? AND status = \'Pending\'');
-                $stmt->execute([$match_id]);
-                $message = "Match proposal #{$match_id} declined.";
+                // Fetch match and pet details before updating status
+                $info_stmt = $pdo->prepare('
+                    SELECT 
+                        m.match_id,
+                        m.proposed_by_user_id,
+                        lp.name AS lost_pet_name
+                    FROM "match" m
+                    JOIN lost_pet l ON m.lost_id = l.lost_id
+                    JOIN pet lp ON l.pet_id = lp.pet_id
+                    JOIN found_pet f ON m.found_id = f.found_id
+                    WHERE m.match_id = ? AND m.status = \'Pending\'
+                      AND (l.user_id = ? OR f.user_id = ?)
+                ');
+                $info_stmt->execute([$match_id, $user_id, $user_id]);
+                $match_info = $info_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($match_info) {
+                    $stmt = $pdo->prepare('UPDATE "match" SET status = \'Dismissed\' WHERE match_id = ? AND status = \'Pending\'');
+                    $stmt->execute([$match_id]);
+
+                    // Dispatch Notification to Proposer
+                    $proposer_id = (int)($match_info['proposed_by_user_id'] ?? 0);
+                    $pet_name    = !empty($match_info['lost_pet_name']) ? $match_info['lost_pet_name'] : 'the pet';
+
+                    if ($proposer_id > 0 && function_exists('create_notification')) {
+                        create_notification(
+                            $pdo,
+                            $proposer_id,
+                            'Match Proposal Declined',
+                            "A proposed match for {$pet_name} was reviewed and declined.",
+                            'my_reports.php?tab=matches'
+                        );
+                    }
+
+                    $message = "Match proposal #{$match_id} declined.";
+                } else {
+                    $error = "Match proposal not found or you lack permission to decline it.";
+                }
             } catch (PDOException $e) {
                 $error = "Failed to decline match: " . $e->getMessage();
             }

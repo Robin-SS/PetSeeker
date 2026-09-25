@@ -41,8 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     SELECT 
                         lp.category_id AS lost_cat, 
                         fp.category_id AS found_cat,
-                        l.location_id AS lost_loc,
-                        f.location_id AS found_loc
+                        l.location_id AS lost_loc, 
+                        f.location_id AS found_loc,
+                        l.user_id AS lost_owner_id,
+                        f.user_id AS found_finder_id,
+                        lp.name AS lost_pet_name,
+                        fp.name AS found_pet_name
                     FROM lost_pet l
                     JOIN pet lp ON l.pet_id = lp.pet_id
                     JOIN found_pet f ON f.found_id = ?
@@ -50,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     WHERE l.lost_id = ?
                 ');
                 $score_stmt->execute([$p_found_id, $p_lost_id]);
-                $pair = $score_stmt->fetch();
+                $pair = $score_stmt->fetch(PDO::FETCH_ASSOC);
 
                 $confidence = 50.00;
                 if ($pair) {
@@ -67,7 +71,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     INSERT INTO "match" (lost_id, found_id, confidence_score, status, proposed_by_user_id) 
                     VALUES (?, ?, ?, \'Pending\', ?)
                 ');
-                $ins_stmt->execute([$p_lost_id, $p_found_id, $confidence, $auth_user['user_id']]);
+                $ins_stmt->execute([$p_lost_id, $p_found_id, $confidence, (int)$auth_user['user_id']]);
+
+                // ==========================================
+                // DISPATCH NOTIFICATIONS TO INVOLVED PARTIES
+                // ==========================================
+                if ($pair && function_exists('create_notification')) {
+                    $current_user_id = (int)$auth_user['user_id'];
+                    $lost_owner_id   = (int)($pair['lost_owner_id'] ?? 0);
+                    $found_finder_id = (int)($pair['found_finder_id'] ?? 0);
+                    $pet_name        = !empty($pair['lost_pet_name']) ? $pair['lost_pet_name'] : 'your pet';
+
+                    // 1. Notify the owner of the Lost Pet (if not the one who proposed it)
+                    if ($lost_owner_id > 0 && $lost_owner_id !== $current_user_id) {
+                        create_notification(
+                            $pdo,
+                            $lost_owner_id,
+                            'New Match Proposal',
+                            "Someone proposed a potential match for {$pet_name}!",
+                            'my_reports.php'
+                        );
+                    }
+
+                    // 2. Notify the reporter of the Found Pet (if not the one who proposed it)
+                    if ($found_finder_id > 0 && $found_finder_id !== $current_user_id && $found_finder_id !== $lost_owner_id) {
+                        create_notification(
+                            $pdo,
+                            $found_finder_id,
+                            'New Match Proposal',
+                            "A found pet you reported was proposed as a match for {$pet_name}.",
+                            'my_reports.php'
+                        );
+                    }
+
+                    // 3. Fallback for testing: If proposing on your own report, notify yourself
+                    if ($lost_owner_id === $current_user_id && $found_finder_id === $current_user_id) {
+                        create_notification(
+                            $pdo,
+                            $current_user_id,
+                            'Match Proposal Submitted',
+                            "Your match proposal between reports #{$p_lost_id} and #{$p_found_id} was submitted.",
+                            'my_reports.php'
+                        );
+                    }
+                }
 
                 header('Location: ' . auth_url('index.php?msg=match_submitted'));
                 exit;

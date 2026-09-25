@@ -133,3 +133,31 @@ try {
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
+
+// -----------------------------------------------------------------------------
+// Notification System Helper
+// -----------------------------------------------------------------------------
+if (!function_exists('create_notification')) {
+    /**
+     * Inserts a persistent notification for a specific user.
+     *
+     * @param PDO $pdo Active PDO database connection
+     * @param int $user_id Target recipient user_id
+     * @param string $title Short summary title (e.g. 'New Match Proposal')
+     * @param string $message Detailed body text
+     * @param string|null $link_url Destination URL or view route
+     * @return bool True if inserted successfully, false on error
+     */
+    function create_notification(PDO $pdo, int $user_id, string $title, string $message, ?string $link_url = null): bool {
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO notification (user_id, title, message, link_url) 
+                VALUES (?, ?, ?, ?)
+            ');
+            return $stmt->execute([$user_id, $title, $message, $link_url]);
+        } catch (PDOException $e) {
+            error_log('Notification insert error: ' . $e->getMessage());
+            return false;
+        }
+    }
+}

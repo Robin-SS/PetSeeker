@@ -71,15 +71,18 @@
                   <i class="bi bi-eye"></i>
                 </a>
 
-                <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this active report? This will remove the listing and pet record.');">
-                  <input type="hidden" name="action" value="takedown_post">
-                  <input type="hidden" name="report_type" value="<?= htmlspecialchars($item['report_type']) ?>">
-                  <input type="hidden" name="report_id" value="<?= (int)$item['report_id'] ?>">
-                  <input type="hidden" name="pet_id" value="<?= (int)$item['pet_id'] ?>">
-                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Takedown Report">
-                    <i class="bi bi-trash3-fill"></i> Takedown
-                  </button>
-                </form>
+                <!-- Triggers Reason Modal -->
+                <button type="button" 
+                        class="btn btn-sm btn-outline-danger" 
+                        title="Takedown Report"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#takedownReasonModal"
+                        data-report-type="<?= htmlspecialchars($item['report_type']) ?>"
+                        data-report-id="<?= (int)$item['report_id'] ?>"
+                        data-pet-id="<?= (int)$item['pet_id'] ?>"
+                        data-pet-name="<?= htmlspecialchars($item['pet_name'] ?? 'Pet #' . $item['report_id']) ?>">
+                  <i class="bi bi-trash3-fill"></i> Takedown
+                </button>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -88,3 +91,65 @@
     </table>
   </div>
 </div>
+
+<!-- Modal for Staff Reason Entry -->
+<div class="modal fade" id="takedownReasonModal" tabindex="-1" aria-labelledby="takedownReasonModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form action="<?= auth_url('staff_dashboard.php?tab=reports') ?>" method="POST">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title fw-bold" id="takedownReasonModalLabel">
+            <i class="bi bi-exclamation-octagon-fill me-1"></i> Moderate / Take Down Report
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <input type="hidden" name="action" value="takedown_post">
+          <input type="hidden" name="report_type" id="modal_report_type" value="">
+          <input type="hidden" name="report_id" id="modal_report_id" value="">
+          <input type="hidden" name="pet_id" id="modal_pet_id" value="">
+
+          <p class="small text-muted mb-3">
+            Removing report for: <strong id="modal_pet_name" class="text-dark"></strong>
+          </p>
+
+          <div class="mb-3">
+            <label for="modal_reason" class="form-label fw-semibold">
+              Reason for Removal <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control" 
+                      id="modal_reason" 
+                      name="reason" 
+                      rows="3" 
+                      placeholder="e.g., Inappropriate content, duplicate listing, spam, or false report..." 
+                      required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger btn-sm fw-semibold">
+            <i class="bi bi-trash3-fill me-1"></i> Delete Post
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.getElementById('takedownReasonModal');
+  if (modalEl) {
+    modalEl.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      document.getElementById('modal_report_type').value = button.getAttribute('data-report-type') || '';
+      document.getElementById('modal_report_id').value   = button.getAttribute('data-report-id') || '';
+      document.getElementById('modal_pet_id').value      = button.getAttribute('data-pet-id') || '';
+      document.getElementById('modal_pet_name').textContent = button.getAttribute('data-pet-name') || 'Unnamed Pet';
+      document.getElementById('modal_reason').value      = '';
+    });
+  }
+});
+</script>
