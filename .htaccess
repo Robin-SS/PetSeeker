@@ -1,10 +1,12 @@
 DirectoryIndex index.php
 RewriteEngine On
 
-# Prevent directory listing
+# Prevent direct directory listing for security
 Options -Indexes
 
-# Ensure assets and endpoints route cleanly
+# If the request is for an existing physical file or directory, serve it directly
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+
+# Otherwise route requests through index.php
 RewriteRule ^ index.php [L]
